@@ -6,6 +6,7 @@ mod utils;
 #[macro_use]
 extern crate glium;
 
+use crate::cpu::Chip8Cpu;
 use crate::input::Input;
 use glium::Surface;
 
@@ -42,6 +43,7 @@ fn main() {
             .unwrap();
 
     let mut input = Input::new();
+    let mut cpu = Chip8Cpu::new();
 
     // Define the size of each square in the grid
     let square_width = 2.0 / 64.0; // Normalized width (assuming OpenGL coordinate system)
@@ -65,10 +67,15 @@ fn main() {
                     glium::winit::event::WindowEvent::CloseRequested => {
                         window_target.exit();
                     }
-                    glium::winit::event::WindowEvent::KeyboardInput { device_id: _, event: _, is_synthetic: _ }=> {
+                    glium::winit::event::WindowEvent::KeyboardInput {
+                        device_id: _,
+                        event: _,
+                        is_synthetic: _,
+                    } => {
                         input.update(&event);
+                        cpu.recieve_input(&input);
                     }
-                    
+
                     // We now need to render everyting in response to a RedrawRequested event due to the animation
                     glium::winit::event::WindowEvent::RedrawRequested => {
                         let mut target = display.draw();
