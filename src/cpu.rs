@@ -1,6 +1,8 @@
 use crate::input::Input;
 use std::ffi::c_uchar;
 use std::os::raw::c_int;
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 pub(crate) struct Chip8Cpu {
     registers: [u8; 16],
@@ -79,4 +81,32 @@ impl Chip8Cpu {
         self.keys[11] = input.key_c; //B
         self.keys[15] = input.key_v; //F
     }
+    pub(crate) fn open_rom(&mut self, input: &Input) {
+        let mut f = BufReader::new(File::open(input.file_name.clone()).expect("open failed"));
+
+        let mut buf = vec![0u8; 4096 - 512];
+
+        loop {
+            let bytes_read = f.read(&mut buf).expect("read failed");
+            if bytes_read == 0 {
+                break;
+            }
+
+            let mut start_index = 0x200; //512
+
+            let end_index = start_index + bytes_read;
+            if end_index <= self.ram.len() {
+                self.ram[start_index..end_index].copy_from_slice(&buf[..bytes_read]);
+            } else {
+                eprintln!("Not enough space in RAM to copy ROM data!");
+            }
+            for byte in &buf[..bytes_read] {
+                println!("Byte{}: {:#04x}", start_index, byte);
+                start_index += 1;
+            }
+            println!("\n\n\n");
+        }
+    }
+    
+    
 }

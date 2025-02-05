@@ -8,6 +8,8 @@ extern crate glium;
 
 use crate::cpu::Chip8Cpu;
 use crate::input::Input;
+use glium::winit::event;
+use glium::winit::keyboard::{KeyCode, PhysicalKey};
 use glium::Surface;
 
 fn main() {
@@ -43,7 +45,9 @@ fn main() {
             .unwrap();
 
     let mut input = Input::new();
+    input.file_name = String::from("roms/PONG");
     let mut cpu = Chip8Cpu::new();
+    cpu.open_rom(&input);
 
     // Define the size of each square in the grid
     let square_width = 2.0 / 64.0; // Normalized width (assuming OpenGL coordinate system)
