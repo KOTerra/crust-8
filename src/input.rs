@@ -1,4 +1,5 @@
 pub(crate) struct Input {
+    pub file_name: String,
     pub key_1: bool,
     pub key_2: bool,
     pub key_3: bool,
@@ -15,10 +16,12 @@ pub(crate) struct Input {
     pub key_x: bool,
     pub key_c: bool,
     pub key_v: bool,
+    pub key_memory_dump: bool,
 }
 impl Input {
     pub(crate) fn new() -> Input {
         Input {
+            file_name: String::new(),
             key_1: false,
             key_2: false,
             key_3: false,
@@ -35,6 +38,7 @@ impl Input {
             key_x: false,
             key_c: false,
             key_v: false,
+            key_memory_dump: false,
         }
     }
     pub(crate) fn update(&mut self, event: &glium::winit::event::WindowEvent) {
@@ -62,6 +66,7 @@ impl Input {
             PhysicalKey::Code(KeyCode::KeyX) => self.key_x = pressed,
             PhysicalKey::Code(KeyCode::KeyC) => self.key_c = pressed,
             PhysicalKey::Code(KeyCode::KeyV) => self.key_v = pressed,
+            PhysicalKey::Code(KeyCode::KeyI) => self.key_memory_dump = pressed,
             _ => (),
         };
         if pressed {

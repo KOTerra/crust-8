@@ -55,7 +55,6 @@ fn main() {
 
     // Assuming you have a matrix of booleans
     let mut grid: [[bool; 64]; 32] = [[false; 64]; 32]; // Replace with your own matrix data
-    utils::fill_matrix_random(&mut grid);
 
     #[derive(Copy, Clone)]
     struct Vertex {
@@ -67,21 +66,25 @@ fn main() {
     event_loop
         .run(move |ev, window_target| {
             match ev {
-                glium::winit::event::Event::WindowEvent { event, .. } => match event {
-                    glium::winit::event::WindowEvent::CloseRequested => {
+                event::Event::WindowEvent { event, .. } => match event {
+                    event::WindowEvent::CloseRequested => {
                         window_target.exit();
                     }
-                    glium::winit::event::WindowEvent::KeyboardInput {
+                    event::WindowEvent::KeyboardInput {
                         device_id: _,
                         event: _,
                         is_synthetic: _,
                     } => {
                         input.update(&event);
                         cpu.recieve_input(&input);
+                        utils::fill_matrix_random(&mut grid);
+                        if input.key_memory_dump {
+                            cpu.memory_dump();
+                        }
                     }
 
                     // We now need to render everyting in response to a RedrawRequested event due to the animation
-                    glium::winit::event::WindowEvent::RedrawRequested => {
+                    event::WindowEvent::RedrawRequested => {
                         let mut target = display.draw();
                         target.clear_color(0.0, 0.01, 0.0, 1.0);
 
@@ -142,14 +145,14 @@ fn main() {
                         target.finish().unwrap();
                     }
 
-                    glium::winit::event::WindowEvent::Resized(window_size) => {
+                    event::WindowEvent::Resized(window_size) => {
                         display.resize(window_size.into());
                     }
                     _ => (),
                 },
                 // By requesting a redraw in response to a AboutToWait event we get continuous rendering.
                 // For applications that only change due to user input you could remove this handler.
-                glium::winit::event::Event::AboutToWait => {
+                event::Event::AboutToWait => {
                     window.request_redraw();
                 }
                 _ => (),

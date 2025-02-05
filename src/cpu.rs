@@ -1,6 +1,4 @@
 use crate::input::Input;
-use std::ffi::c_uchar;
-use std::os::raw::c_int;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
@@ -109,4 +107,13 @@ impl Chip8Cpu {
     }
     
     
+    fn extract_bits(val:u16, bits: u16, mask:u16) -> u8 {
+        ((val & mask) >> bits) as u8
+    }
+    pub(crate) fn memory_dump(&mut self) {
+        println!("MEMORY DUMP\n:");
+        for i in 0..4095 {
+            println!("Byte{}: {:#04x}", i, self.ram[i]);
+        }
+    }
 }
