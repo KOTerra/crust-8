@@ -17,6 +17,7 @@ pub(crate) struct Input {
     pub key_c: bool,
     pub key_v: bool,
     pub key_memory_dump: bool,
+    pub(crate) key_draw_flag: bool,
 }
 impl Input {
     pub(crate) fn new() -> Input {
@@ -39,6 +40,7 @@ impl Input {
             key_c: false,
             key_v: false,
             key_memory_dump: false,
+            key_draw_flag: false,
         }
     }
     pub(crate) fn update(&mut self, event: &glium::winit::event::WindowEvent) {
@@ -68,13 +70,47 @@ impl Input {
             PhysicalKey::Code(KeyCode::KeyC) => self.key_c = pressed,
             PhysicalKey::Code(KeyCode::KeyV) => self.key_v = pressed,
             PhysicalKey::Code(KeyCode::KeyI) => self.key_memory_dump = pressed,
+            PhysicalKey::Code(KeyCode::KeyO) => self.key_draw_flag = pressed,
             _ => (),
         };
+        let mut active_keys = Vec::new();
 
-        // println!(
-        //     "Keys: W={} S={} A={} D={} Q={} E={} R={} Z={} X={} C={} V={}",
-        //     self.key_w, self.key_s, self.key_a, self.key_d, self.key_q,
-        //     self.key_e, self.key_r, self.key_z, self.key_x, self.key_c, self.key_v
-        // );
+        if self.key_w {
+            active_keys.push("W");
+        }
+        if self.key_s {
+            active_keys.push("S");
+        }
+        if self.key_a {
+            active_keys.push("A");
+        }
+        if self.key_d {
+            active_keys.push("D");
+        }
+        if self.key_q {
+            active_keys.push("Q");
+        }
+        if self.key_e {
+            active_keys.push("E");
+        }
+        if self.key_r {
+            active_keys.push("R");
+        }
+        if self.key_z {
+            active_keys.push("Z");
+        }
+        if self.key_x {
+            active_keys.push("X");
+        }
+        if self.key_c {
+            active_keys.push("C");
+        }
+        if self.key_v {
+            active_keys.push("V");
+        }
+
+        if !active_keys.is_empty() {
+            println!("Keys: {}", active_keys.join(", "));
+        }
     }
 }
