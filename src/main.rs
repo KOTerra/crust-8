@@ -1,15 +1,15 @@
-mod cpu;
-mod input;
-mod utils;
-
 //https://glium.github.io/glium/book/tuto-04-matrices.html
 #[macro_use]
 extern crate glium;
+mod cpu;
+mod input;
+mod timers;
+mod utils;
 
 use crate::cpu::Chip8Cpu;
 use crate::input::Input;
+use crate::timers::Timers;
 use glium::winit::event;
-use glium::winit::keyboard::{KeyCode, PhysicalKey};
 use glium::Surface;
 
 fn main() {
@@ -48,6 +48,7 @@ fn main() {
     input.file_name = String::from("roms/PONG");
     let mut cpu = Chip8Cpu::new();
     cpu.open_rom(&input);
+    let mut timer = Timers::new();
 
     // Define the size of each square in the grid
     let square_width = 2.0 / 64.0; // Normalized width (assuming OpenGL coordinate system)
@@ -65,10 +66,18 @@ fn main() {
     #[allow(deprecated)]
     event_loop
         .run(move |ev, window_target| {
+
+            cpu.execute_cycle();
+            timer.update(&mut cpu);
+
+            //treat the event
             match ev {
                 event::Event::WindowEvent { event, .. } => match event {
                     event::WindowEvent::CloseRequested => {
                         window_target.exit();
+                    }
+                    event::WindowEvent::DroppedFile(path) => {
+                        //TODO reinitialize cpu with new path
                     }
                     event::WindowEvent::KeyboardInput {
                         device_id: _,
@@ -81,68 +90,84 @@ fn main() {
                         if input.key_memory_dump {
                             cpu.memory_dump();
                         }
+                        if input.key_draw_flag {
+                            cpu.draw_flag = true;
+                        } else {
+                            cpu.draw_flag = false;
+                        }
                     }
 
                     // We now need to render everyting in response to a RedrawRequested event due to the animation
                     event::WindowEvent::RedrawRequested => {
-                        let mut target = display.draw();
-                        target.clear_color(0.0, 0.01, 0.0, 1.0);
+                        //idk
+                        use std::time::{Duration, Instant};
+                        let frame_duration: Duration = Duration::from_secs_f32(1.0 / 60.0); // 60 FPS
 
-                        for (row_idx, row) in grid.iter().enumerate() {
-                            for (col_idx, &cell) in row.iter().enumerate() {
-                                if cell {
-                                    // Only draw squares for `true` values
-                                    let x = -1.0 + (col_idx as f32 * square_width);
-                                    let y = 1.0 - (row_idx as f32 * square_height);
+                        let mut last_frame_time: Option<Instant> = None;
 
-                                    // Define the square's vertices
-                                    let vertices = [
-                                        Vertex { position: [x, y] },
-                                        Vertex {
-                                            position: [x + square_width, y],
-                                        },
-                                        Vertex {
-                                            position: [x, y - square_height],
-                                        },
-                                        Vertex {
-                                            position: [x + square_width, y - square_height],
-                                        },
-                                    ];
-
-                                    // Create vertex buffer
-                                    let vertex_buffer =
-                                        glium::VertexBuffer::new(&display, &vertices).unwrap();
-
-                                    // Define indices for a triangle strip
-                                    let indices = glium::index::NoIndices(
-                                        glium::index::PrimitiveType::TriangleStrip,
-                                    );
-
-                                    // Uniform matrix (identity, as we don’t need transformations per square)
-                                    let uniforms = uniform! {
-                                        matrix: [
-                                            [1.0, 0.0, 0.0, 0.0],
-                                            [0.0, 1.0, 0.0, 0.0],
-                                            [0.0, 0.0, 1.0, 0.0],
-                                            [0.0, 0.0, 0.0, 1.0f32],
-                                        ]
-                                    };
-
-                                    // Draw the square
-                                    target
-                                        .draw(
-                                            &vertex_buffer,
-                                            &indices,
-                                            &program,
-                                            &uniforms,
-                                            &Default::default(),
-                                        )
-                                        .unwrap();
-                                }
+                        let now = Instant::now();
+                        if let Some(last_time) = last_frame_time {
+                            if now.duration_since(last_time) < frame_duration {
+                                return; // Skip this frame if it's too soon
                             }
                         }
+                        last_frame_time = Some(now); // Update last frame time
+                                                     //idk
 
-                        target.finish().unwrap();
+                        if cpu.draw_flag {
+                            //sau la inceput TODO
+                            let mut target = display.draw();
+                            target.clear_color(0.0, 0.01, 0.0, 1.0);
+
+                            for (row_idx, row) in grid.iter().enumerate() {
+                                for (col_idx, &cell) in row.iter().enumerate() {
+                                    if cell {
+                                        let x = -1.0 + (col_idx as f32 * square_width);
+                                        let y = 1.0 - (row_idx as f32 * square_height);
+
+                                        let vertices = [
+                                            Vertex { position: [x, y] },
+                                            Vertex {
+                                                position: [x + square_width, y],
+                                            },
+                                            Vertex {
+                                                position: [x, y - square_height],
+                                            },
+                                            Vertex {
+                                                position: [x + square_width, y - square_height],
+                                            },
+                                        ];
+
+                                        let vertex_buffer =
+                                            glium::VertexBuffer::new(&display, &vertices).unwrap();
+                                        let indices = glium::index::NoIndices(
+                                            glium::index::PrimitiveType::TriangleStrip,
+                                        );
+
+                                        let uniforms = uniform! {
+                                            matrix: [
+                                                [1.0, 0.0, 0.0, 0.0],
+                                                [0.0, 1.0, 0.0, 0.0],
+                                                [0.0, 0.0, 1.0, 0.0],
+                                                [0.0, 0.0, 0.0, 1.0f32],
+                                            ]
+                                        };
+
+                                        target
+                                            .draw(
+                                                &vertex_buffer,
+                                                &indices,
+                                                &program,
+                                                &uniforms,
+                                                &Default::default(),
+                                            )
+                                            .unwrap();
+                                    }
+                                }
+                            }
+
+                            target.finish().unwrap();
+                        }
                     }
 
                     event::WindowEvent::Resized(window_size) => {

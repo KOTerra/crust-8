@@ -3,18 +3,18 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 
 pub(crate) struct Chip8Cpu {
-    v_registers: [u8; 16],      //v[0] - v[F], F is flags register
+    v_registers: [u8; 16], //v[0] - v[F], F is flags register
     i_register: u16,
-    stack: [u16; 16],
+    stack: Vec<u16>, //size 16
     stack_ptr: u16,
     program_counter: u16,
-    delay_timer: u8,
-    sound_timer: u8,
+    pub(crate) delay_timer: u8,
+    pub(crate) sound_timer: u8,
 
     ram: [u8; 4096],
 
-    display: [bool; 64 * 32],
-    draw_flag: bool,
+    pub(crate) display: [bool; 64 * 32],
+    pub(crate) draw_flag: bool,
 
     keys: [bool; 16],
 }
@@ -24,7 +24,7 @@ impl Chip8Cpu {
         let mut returned: Chip8Cpu = Self {
             v_registers: [0; 16],
             i_register: 0,
-            stack: [0; 16],
+            stack: vec![0, 16],
             stack_ptr: 0,
             program_counter: 0x200,
             delay_timer: 0,
@@ -105,9 +105,18 @@ impl Chip8Cpu {
             println!("\n\n\n");
         }
     }
-    
-    
-    fn extract_bits(val:u16, bits: u16, mask:u16) -> u8 {
+
+    fn fetch(&mut self) {}
+    fn decode(&mut self) {}
+    fn execute(&mut self) {}
+
+    pub(crate) fn execute_cycle(&mut self) {
+        self.fetch();
+        self.decode();
+        self.execute();
+    }
+
+    fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
         ((val & mask) >> bits) as u8
     }
     pub(crate) fn memory_dump(&mut self) {
