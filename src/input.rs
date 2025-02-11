@@ -42,13 +42,14 @@ impl Input {
         }
     }
     pub(crate) fn update(&mut self, event: &glium::winit::event::WindowEvent) {
-        self.key_w = false;
-        self.key_s = false;
         use glium::winit::keyboard::{KeyCode, PhysicalKey};
+
         let glium::winit::event::WindowEvent::KeyboardInput { event, .. } = event else {
             return;
         };
+
         let pressed = event.state == glium::winit::event::ElementState::Pressed;
+
         match &event.physical_key {
             PhysicalKey::Code(KeyCode::Digit1) => self.key_1 = pressed,
             PhysicalKey::Code(KeyCode::Digit2) => self.key_2 = pressed,
@@ -69,8 +70,11 @@ impl Input {
             PhysicalKey::Code(KeyCode::KeyI) => self.key_memory_dump = pressed,
             _ => (),
         };
-        if pressed {
-            println!("w:{} s:{}", self.key_w, self.key_s);
-        }
+
+        // println!(
+        //     "Keys: W={} S={} A={} D={} Q={} E={} R={} Z={} X={} C={} V={}",
+        //     self.key_w, self.key_s, self.key_a, self.key_d, self.key_q,
+        //     self.key_e, self.key_r, self.key_z, self.key_x, self.key_c, self.key_v
+        // );
     }
 }

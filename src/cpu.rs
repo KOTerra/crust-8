@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 
 pub(crate) struct Chip8Cpu {
-    registers: [u8; 16],
+    v_registers: [u8; 16],      //v[0] - v[F], F is flags register
     i_register: u16,
     stack: [u16; 16],
     stack_ptr: u16,
@@ -22,7 +22,7 @@ pub(crate) struct Chip8Cpu {
 impl Chip8Cpu {
     pub(crate) fn new() -> Self {
         let mut returned: Chip8Cpu = Self {
-            registers: [0; 16],
+            v_registers: [0; 16],
             i_register: 0,
             stack: [0; 16],
             stack_ptr: 0,
