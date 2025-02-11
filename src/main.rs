@@ -50,12 +50,11 @@ fn main() {
     cpu.open_rom(&input);
     let mut timer = Timers::new();
 
-    // Define the size of each square in the grid
-    let square_width = 2.0 / 64.0; // Normalized width (assuming OpenGL coordinate system)
-    let square_height = 2.0 / 32.0; // Normalized height
+    //size of each square in the grid normalized  (OpenGL coordinate system)
+    let square_width = 2.0 / 64.0;
+    let square_height = 2.0 / 32.0;
 
-    // Assuming you have a matrix of booleans
-    let mut grid: [[bool; 64]; 32] = [[false; 64]; 32]; // Replace with your own matrix data
+    let mut grid: [[bool; 64]; 32] = [[false; 64]; 32];
 
     #[derive(Copy, Clone)]
     struct Vertex {
@@ -66,7 +65,6 @@ fn main() {
     #[allow(deprecated)]
     event_loop
         .run(move |ev, window_target| {
-
             cpu.execute_cycle();
             timer.update(&mut cpu);
 
@@ -175,8 +173,7 @@ fn main() {
                     }
                     _ => (),
                 },
-                // By requesting a redraw in response to a AboutToWait event we get continuous rendering.
-                // For applications that only change due to user input you could remove this handler.
+
                 event::Event::AboutToWait => {
                     window.request_redraw();
                 }
