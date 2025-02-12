@@ -82,6 +82,30 @@ impl Chip8Cpu {
         self.keys[11] = input.key_c; //B
         self.keys[15] = input.key_v; //F
     }
+
+    pub(crate) fn execute_cycle(&mut self) {
+        self.fetch();
+        self.decode();
+        self.execute();
+    }
+    fn fetch(&mut self) {
+        self.opcode = (self.ram[self.program_counter as usize] as u16) << 8;
+        self.opcode = self.opcode | (self.ram[self.program_counter as usize + 1] as u16);
+    }
+    fn decode(&mut self) {}
+    fn execute(&mut self) {}
+
+    //clears the display
+    pub(crate) fn op_00E0(&mut self) {
+        // self.display.iter_mut().for_each(|x| *x = false);//same result
+        let l = self.display.len() as usize;
+        &self.display[0..l].fill(false);
+    }
+    pub(crate) fn op_00EE(&mut self) {
+        self.stack_ptr -= 1;
+        self.program_counter = self.stack[self.stack_ptr as usize];
+    }
+
     fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
         ((val & mask) >> bits) as u8
     }
@@ -113,14 +137,6 @@ impl Chip8Cpu {
         }
     }
 
-    fn fetch(&mut self) {}
-    fn decode(&mut self) {}
-    fn execute(&mut self) {}
-
-    pub(crate) fn execute_cycle(&mut self) {
-        self.fetch();
-        self.decode();
-        self.execute();
     pub(crate) fn reset(&mut self) {
         self.program_counter = 0x200;
         self.stack = vec![0];
