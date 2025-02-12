@@ -76,6 +76,9 @@ fn main() {
                     }
                     event::WindowEvent::DroppedFile(path) => {
                         //TODO reinitialize cpu with new path
+                        input.file_name = String::from(path.to_str().unwrap());
+                        cpu.reset();
+                        cpu.open_rom(&input);
                     }
                     event::WindowEvent::KeyboardInput {
                         device_id: _,

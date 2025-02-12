@@ -17,6 +17,8 @@ pub(crate) struct Chip8Cpu {
     pub(crate) draw_flag: bool,
 
     keys: [bool; 16],
+
+    opcode: u16,
 }
 
 impl Chip8Cpu {
@@ -33,6 +35,7 @@ impl Chip8Cpu {
             display: [false; 64 * 32],
             draw_flag: false,
             keys: [false; 16],
+            opcode: 0,
         };
         let font: [u8; 80] = [
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -79,6 +82,10 @@ impl Chip8Cpu {
         self.keys[11] = input.key_c; //B
         self.keys[15] = input.key_v; //F
     }
+    fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
+        ((val & mask) >> bits) as u8
+    }
+
     pub(crate) fn open_rom(&mut self, input: &Input) {
         let mut f = BufReader::new(File::open(input.file_name.clone()).expect("open failed"));
 
@@ -114,11 +121,14 @@ impl Chip8Cpu {
         self.fetch();
         self.decode();
         self.execute();
+    pub(crate) fn reset(&mut self) {
+        self.program_counter = 0x200;
+        self.stack = vec![0];
+        self.stack_ptr = 0;
+        self.opcode = 0;
+        &self.ram[self.program_counter as usize..self.program_counter as usize + 512].fill(0x00);
     }
 
-    fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
-        ((val & mask) >> bits) as u8
-    }
     pub(crate) fn memory_dump(&mut self) {
         println!("MEMORY DUMP\n:");
         for i in 0..4095 {
