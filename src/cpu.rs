@@ -1,4 +1,5 @@
 use crate::input::Input;
+use rand::Rng;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
@@ -83,6 +84,41 @@ impl Chip8Cpu {
         self.keys[15] = input.key_v; //F
     }
 
+    pub(crate) fn open_rom(&mut self, input: &Input) {
+        let mut f = BufReader::new(File::open(input.file_name.clone()).expect("open failed"));
+
+        let mut buf = vec![0u8; 4096 - 512];
+
+        loop {
+            let bytes_read = f.read(&mut buf).expect("read failed");
+            if bytes_read == 0 {
+                break;
+            }
+
+            let mut start_index = 0x200; //512
+
+            let end_index = start_index + bytes_read;
+            if end_index <= self.ram.len() {
+                self.ram[start_index..end_index].copy_from_slice(&buf[..bytes_read]);
+            } else {
+                eprintln!("Not enough space in RAM to copy ROM data!");
+            }
+            for byte in &buf[..bytes_read] {
+                println!("Byte{}: {:#04x}", start_index, byte);
+                start_index += 1;
+            }
+            println!("\n\n\n");
+        }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.program_counter = 0x200;
+        self.stack = vec![0];
+        self.stack_ptr = 0;
+        self.opcode = 0;
+        let _ = &self.ram[self.program_counter as usize..self.program_counter as usize + 512].fill(0x00);
+    }
+
     pub(crate) fn execute_cycle(&mut self) {
         self.fetch();
         if (self.program_counter as usize) < 4094 {
@@ -100,12 +136,12 @@ impl Chip8Cpu {
     fn execute(&mut self) {}
 
     //clears the display
-    pub(crate) fn op_00E0(&mut self) {
+    pub(crate) fn op_00e0(&mut self) {
         // self.display.iter_mut().for_each(|x| *x = false);//same result
         let l = self.display.len();
-        &self.display[0..l].fill(false);
+        let _ = &self.display[0..l].fill(false);
     }
-    pub(crate) fn op_00EE(&mut self) {
+    pub(crate) fn op_00ee(&mut self) {
         self.stack_ptr -= 1;
         self.program_counter = self.stack[self.stack_ptr as usize];
     }
@@ -223,45 +259,27 @@ impl Chip8Cpu {
         self.v_registers[vx as usize] <<= 1;
     }
 
-    pub(crate) fn op_annn(&mut self) {}
+    pub(crate) fn op_annn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+        self.i_register = address;
+    }
+    pub(crate) fn op_bnnn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+        self.program_counter = self.v_registers[0] as u16 + address;
+    }
+    pub(crate) fn op_cxkk(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let byte = self.opcode & 0x00FF;
+
+        let random: u8 = rand::rng().random();
+
+        self.v_registers[vx as usize] = random & byte as u8;
+    }
+
+    pub(crate) fn op_dxyn(&mut self) {}
 
     fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
         ((val & mask) >> bits) as u8
-    }
-
-    pub(crate) fn open_rom(&mut self, input: &Input) {
-        let mut f = BufReader::new(File::open(input.file_name.clone()).expect("open failed"));
-
-        let mut buf = vec![0u8; 4096 - 512];
-
-        loop {
-            let bytes_read = f.read(&mut buf).expect("read failed");
-            if bytes_read == 0 {
-                break;
-            }
-
-            let mut start_index = 0x200; //512
-
-            let end_index = start_index + bytes_read;
-            if end_index <= self.ram.len() {
-                self.ram[start_index..end_index].copy_from_slice(&buf[..bytes_read]);
-            } else {
-                eprintln!("Not enough space in RAM to copy ROM data!");
-            }
-            for byte in &buf[..bytes_read] {
-                println!("Byte{}: {:#04x}", start_index, byte);
-                start_index += 1;
-            }
-            println!("\n\n\n");
-        }
-    }
-
-    pub(crate) fn reset(&mut self) {
-        self.program_counter = 0x200;
-        self.stack = vec![0];
-        self.stack_ptr = 0;
-        self.opcode = 0;
-        &self.ram[self.program_counter as usize..self.program_counter as usize + 512].fill(0x00);
     }
 
     pub(crate) fn memory_dump(&mut self) {
