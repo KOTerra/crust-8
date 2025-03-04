@@ -65,6 +65,7 @@ fn main() {
     #[allow(deprecated)]
     event_loop
         .run(move |ev, window_target| {
+            //sau la final daca nu merge input
             cpu.execute_cycle();
             timer.update(&mut cpu);
 
@@ -182,7 +183,10 @@ fn main() {
                 }
                 _ => (),
             }
+            // cpu.execute_cycle();
+            // timer.update(&mut cpu);
         })
         .unwrap();
+
     println!("stop");
 }

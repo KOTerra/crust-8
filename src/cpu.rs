@@ -85,7 +85,11 @@ impl Chip8Cpu {
 
     pub(crate) fn execute_cycle(&mut self) {
         self.fetch();
+        if (self.program_counter as usize) < 4094 {
+            self.program_counter += 2;
+        }
         self.decode();
+
         self.execute();
     }
     fn fetch(&mut self) {
@@ -98,13 +102,125 @@ impl Chip8Cpu {
     //clears the display
     pub(crate) fn op_00E0(&mut self) {
         // self.display.iter_mut().for_each(|x| *x = false);//same result
-        let l = self.display.len() as usize;
+        let l = self.display.len();
         &self.display[0..l].fill(false);
     }
     pub(crate) fn op_00EE(&mut self) {
         self.stack_ptr -= 1;
         self.program_counter = self.stack[self.stack_ptr as usize];
     }
+
+    pub(crate) fn op_1nnn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+        self.program_counter = address;
+    }
+
+    pub(crate) fn op_2nnn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+        self.stack[self.stack_ptr as usize] = self.program_counter;
+        self.stack_ptr += 1;
+        self.program_counter = address;
+    }
+
+    pub(crate) fn op_3xkk(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let byte = self.opcode & 0x00FF;
+        if self.v_registers[vx] == byte {
+            self.program_counter += 2;
+        }
+    }
+
+    pub(crate) fn op_4xkk(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let byte = self.opcode & 0x00FF;
+        if self.v_registers[vx] != byte {
+            self.program_counter += 2;
+        }
+    }
+    pub(crate) fn op_5xy0(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+        if self.v_registers[vx] == self.v_registers[vy] {
+            self.program_counter += 2;
+        }
+    }
+    pub(crate) fn op_9xy0(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+        if self.v_registers[vx] != self.v_registers[vy] {
+            self.program_counter += 2;
+        }
+    }
+    pub(crate) fn op_6xkk(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let byte = self.opcode & 0x00FF;
+        self.v_registers[vx] = byte;
+    }
+    pub(crate) fn op_7xkk(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let byte = self.opcode & 0x00FF;
+        self.v_registers[vx] += byte;
+    }
+    pub(crate) fn op_8xy0(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+
+        self.v_registers[vx] = self.v_registers[vy];
+    }
+
+    pub(crate) fn op_8xy1(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+        self.v_registers[vx] |= self.v_registers[vy];
+    }
+    pub(crate) fn op_8xy2(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+        self.v_registers[vx] &= self.v_registers[vy];
+    }
+    pub(crate) fn op_8xy3(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+        self.v_registers[vx] ^= self.v_registers[vy];
+    }
+    pub(crate) fn op_8xy4(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+
+        let (result, carry) = self.v_registers[vx].overflowing_add(self.v_registers[vy]);
+        self.v_registers[0xF] = carry;
+        self.v_registers[vx] = result;
+    }
+    pub(crate) fn op_8xy5(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+
+        let (result, borrow) = self.v_registers[vx].borrow_sub(self.v_registers[vy]);
+        self.v_registers[0xF] = 1 - borrow;
+        self.v_registers[vx] = result;
+    }
+    pub(crate) fn op_8xy6(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+
+        self.v_registers[0xF] = (self.opcode & 0x0001) as u8;
+        self.v_registers[vx] >>= 1;
+    }
+    pub(crate) fn op_8xy7(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+        let vy = (self.opcode & 0x00F0) >> 4;
+
+        let (result, borrow) = self.v_registers[vy].borrow_sub(self.v_registers[vx]);
+        self.v_registers[0xF] = 1 - borrow;
+        self.v_registers[vx] = result;
+    }
+    pub(crate) fn op_8xye(&mut self) {
+        let vx = (self.opcode & 0x0F00) >> 8;
+
+        self.v_registers[0xF] = (self.v_registers[vx]) >> 7;
+        self.v_registers[vx] <<= 1;
+    }
+
+    pub(crate) fn op_annn(&mut self) {}
 
     fn extract_bits(val: u16, bits: u16, mask: u16) -> u8 {
         ((val & mask) >> bits) as u8
