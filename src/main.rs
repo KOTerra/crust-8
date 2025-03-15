@@ -66,7 +66,7 @@ fn main() {
     event_loop
         .run(move |ev, window_target| {
             //sau la final daca nu merge input
-            cpu.execute_cycle();
+           // cpu.execute_cycle();      //TODO uncomment sometime
             timer.update(&mut cpu);
 
             //treat the event
