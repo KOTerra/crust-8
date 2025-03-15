@@ -130,7 +130,7 @@ impl Chip8Cpu {
 
     pub(crate) fn execute_cycle(&mut self) {
         self.fetch();
-        if (self.program_counter as usize) < MEMORY_SIZE {
+        if (self.program_counter as usize) < MEMORY_SIZE-2 {
             self.program_counter += 2;
         }
         self.decode();
