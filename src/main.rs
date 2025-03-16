@@ -45,16 +45,19 @@ fn main() {
             .unwrap();
 
     let mut input = Input::new();
-    input.file_name = String::from("roms/PONG");
+    input.file_name = String::from("roms/3-corax+.ch8");
     let mut cpu = Chip8Cpu::new();
     cpu.open_rom(&input);
     let mut timer = Timers::new();
+    
 
     //size of each square in the grid normalized  (OpenGL coordinate system)
     let square_width = 2.0 / 64.0;
     let square_height = 2.0 / 32.0;
 
     let mut grid: [[bool; 64]; 32] = [[false; 64]; 32];
+    cpu.draw_flag=true;
+
 
     #[derive(Copy, Clone)]
     struct Vertex {
@@ -92,11 +95,11 @@ fn main() {
                         if input.key_memory_dump {
                             cpu.memory_dump();
                         }
-                        if input.key_draw_flag {
-                            cpu.draw_flag = true;
-                        } else {
-                            cpu.draw_flag = false;
-                        }
+                        // if input.key_draw_flag {
+                        //     cpu.draw_flag = true;
+                        // } else {
+                        //     cpu.draw_flag = false;
+                        // }
                     }
 
                     // We now need to render everyting in response to a RedrawRequested event due to the animation
@@ -118,6 +121,7 @@ fn main() {
 
                         if cpu.draw_flag {
                             //sau la inceput TODO
+                            utils::copy_array(&mut grid, &mut cpu.display);
                             let mut target = display.draw();
                             target.clear_color(0.0, 0.01, 0.0, 1.0);
 

@@ -130,19 +130,72 @@ impl Chip8Cpu {
 
     pub(crate) fn execute_cycle(&mut self) {
         self.fetch();
-        if (self.program_counter as usize) < MEMORY_SIZE-2 {
+        if (self.program_counter as usize) < MEMORY_SIZE - 2 {
             self.program_counter += 2;
         }
-        self.decode();
-
-        self.execute();
+        self.decode_execute();
     }
     fn fetch(&mut self) {
-        self.opcode = (self.ram[self.program_counter as usize] as u16) << 8;
-        self.opcode = self.opcode | (self.ram[self.program_counter as usize + 1] as u16);
+        self.opcode = (self.ram[self.program_counter as usize] as u16) << 8
+            | (self.ram[self.program_counter as usize + 1] as u16);
     }
-    fn decode(&mut self) {}
-    fn execute(&mut self) {}
+    fn decode_execute(&mut self) {
+        let opcode = self.opcode;
+       // println!("Opcode: {:04X}", opcode);
+        let first_nibble = (opcode & 0xF000) >> 12;
+        let n = (opcode & 0x000F) as u8;
+        let nn = (opcode & 0x00FF) as u8;
+
+        match first_nibble {
+            0x0 => match opcode {
+                0x00E0 => self.op_00e0(), 
+                0x00EE => self.op_00ee(), 
+                _ => {}                   
+            },
+            0x1 => self.op_1nnn(), // Jump to address
+            0x2 => self.op_2nnn(), // Call subroutine
+            0x3 => self.op_3xkk(), // Skip if VX == NN
+            0x4 => self.op_4xkk(), // Skip if VX != NN
+            0x5 => self.op_5xy0(), // Skip if VX == VY
+            0x6 => self.op_6xkk(), // Set VX to NN
+            0x7 => self.op_7xkk(), // Add NN to VX
+            0x8 => match n {
+                0x0 => self.op_8xy0(), // VX = VY
+                0x1 => self.op_8xy1(), // VX = VX | VY
+                0x2 => self.op_8xy2(), // VX = VX & VY
+                0x3 => self.op_8xy3(), // VX = VX ^ VY
+                0x4 => self.op_8xy4(), // VX += VY (carry flag)
+                0x5 => self.op_8xy5(), // VX -= VY (borrow flag)
+                0x6 => self.op_8xy6(), // Shift VX right
+                0x7 => self.op_8xy7(), // VX = VY - VX
+                0xE => self.op_8xye(), // Shift VX left
+                _ => {}
+            },
+            0x9 => self.op_9xy0(), // Skip if VX != VY
+            0xA => self.op_annn(), // Set I register
+            0xB => self.op_bnnn(), // Jump to NNN + V0
+            0xC => self.op_cxkk(), // Random number & NN
+            0xD => self.op_dxyn(), // Draw sprite
+            0xE => match nn {
+                0x9E => self.op_ex9e(), // Skip if key in VX is pressed
+                0xA1 => self.op_exa1(), // Skip if key in VX is NOT pressed
+                _ => {}
+            },
+            0xF => match nn {
+                0x07 => self.op_fx07(), // Get delay timer
+                0x0A => self.op_fx0a(), // Wait for key press
+                0x15 => self.op_fx15(), // Set delay timer
+                0x18 => self.op_fx18(), // Set sound timer
+                0x1E => self.op_fx1e(), // Add VX to I
+                0x29 => self.op_fx29(), // Set I to font sprite
+                0x33 => self.op_fx33(), // Store BCD of VX
+                0x55 => self.op_fx55(), // Store registers in memory
+                0x65 => self.op_fx65(), // Load registers from memory
+                _ => {}
+            },
+            _ => {} // Unknown opcode
+        }
+    }
 
     //clears the display
     pub(crate) fn op_00e0(&mut self) {
@@ -204,7 +257,7 @@ impl Chip8Cpu {
     pub(crate) fn op_7xkk(&mut self) {
         let vx = (self.opcode & 0x0F00) >> 8;
         let byte = (self.opcode & 0x00FF) as u8;
-        self.v_registers[vx as usize] += byte;
+        let _ = self.v_registers[vx as usize].overflowing_add(byte);
     }
     pub(crate) fn op_8xy0(&mut self) {
         let vx = (self.opcode & 0x0F00) >> 8;
@@ -249,7 +302,7 @@ impl Chip8Cpu {
     pub(crate) fn op_8xy6(&mut self) {
         let vx = (self.opcode & 0x0F00) >> 8;
 
-        self.v_registers[0xF] = (self.opcode & 0x0001) as u8;
+        self.v_registers[0xF] = self.v_registers[vx as usize] & 1;
         self.v_registers[vx as usize] >>= 1;
     }
     pub(crate) fn op_8xy7(&mut self) {
@@ -288,7 +341,7 @@ impl Chip8Cpu {
     pub(crate) fn op_dxyn(&mut self) {
         let vx = (self.opcode & 0x0F00) >> 8;
         let vy = (self.opcode & 0x00F0) >> 4;
-        let height = (self.opcode & 0x000F);
+        let height = self.opcode & 0x000F;
 
         let x_pos = self.v_registers[vx as usize] % PIXELS_WIDE as u8;
         let y_pos = self.v_registers[vy as usize] % PIXELS_HIGH as u8;
